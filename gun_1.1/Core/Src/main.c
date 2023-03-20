@@ -62,7 +62,7 @@ double ki1 = 20;
 double ui_p1, ui1, up1, pre1;
 int dir;
 int pwm;
-int home, s1, shoot;
+int home, s1, s2, shoot;
 int round1 = 3;
 float angleZ, input;
 
@@ -149,10 +149,11 @@ void calculatePIDSpeed(){
 //}
 
 void setHome (void){
-	vt = -300;
+	vt = -400;
 	while (1)
 	{
-		if (HAL_GPIO_ReadPin(S1_GPIO_Port, S1_Pin) == 1){
+		if (HAL_GPIO_ReadPin(S1_GPIO_Port, S1_Pin) &&
+			HAL_GPIO_ReadPin(S2_GPIO_Port, S2_Pin)){
 			vt = 0;
 			return;
 		}
@@ -250,7 +251,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -537,11 +538,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : S1_Pin */
-  GPIO_InitStruct.Pin = S1_Pin;
+  /*Configure GPIO pins : S1_Pin S2_Pin */
+  GPIO_InitStruct.Pin = S1_Pin|S2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(S1_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : ENC_DC2_Pin */
   GPIO_InitStruct.Pin = ENC_DC2_Pin;
@@ -578,6 +579,7 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	  s2 = HAL_GPIO_ReadPin(S2_GPIO_Port, S2_Pin);
 	  calculatePIDSpeed();
 	  driveSpeed(-dir, pwm);
 	  osDelay(1);
@@ -598,25 +600,27 @@ void StartTask02(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  switch(shoot){
-	  	  case 6:
-	  		  s6Shoot();
-			  break;
-		  case 7:
-			  s7Shoot();
-			  break;
-		  case 8:
-			  s8Shoot();
-			  break;
-		  case 9:
-			  s9Shoot();
-			  break;
-		  case 10:
-			  s10Shoot();
-			  break;
-		  case 11:
-			  s11Shoot();
-			  break;
+	  if (home == 0){
+		  switch(shoot){
+			  case 6:
+				  s6Shoot();
+				  break;
+			  case 7:
+				  s7Shoot();
+				  break;
+			  case 8:
+				  s8Shoot();
+				  break;
+			  case 9:
+				  s9Shoot();
+				  break;
+			  case 10:
+				  s10Shoot();
+				  break;
+			  case 11:
+				  s11Shoot();
+				  break;
+		  }
 	  }
 
 	  resetVariables();

@@ -70,6 +70,8 @@ void Error_Handler(void);
 #define ENC_DC1_Pin GPIO_PIN_10
 #define ENC_DC1_GPIO_Port GPIOB
 #define ENC_DC1_EXTI_IRQn EXTI15_10_IRQn
+#define S2_Pin GPIO_PIN_8
+#define S2_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
