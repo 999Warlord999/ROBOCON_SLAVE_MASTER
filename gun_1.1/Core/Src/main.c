@@ -62,9 +62,14 @@ double ki1 = 20;
 double ui_p1, ui1, up1, pre1;
 int dir;
 int pwm;
-int home, s1, s2, shoot;
+int s1, s2;
+uint8_t pole;
+uint8_t home = 2;
+uint16_t manual_rpm, manual_delay;
 int round1 = 3;
 float angleZ, input;
+uint16_t rpm_shoot[] = {1300, 1295, 1400, 1000, 1100, 1200};
+uint16_t delay_shoot[] = {305, 305, 305, 305, 305, 305};
 
 /* USER CODE END PV */
 
@@ -115,8 +120,8 @@ void calculatePIDSpeed(){
 
 	up1 = kp1*e1;
 	ui1 = ui_p1 + ki1*e1*0.001;
-	if (ui1 > 80) ui1 = 80;
-	else if (ui1 < -80) ui1 = -80;
+	if (ui1 > 1000) ui1 = 1000;
+	else if (ui1 < -1000) ui1 = -1000;
 	u1 = up1  + ui1; //Tinh tong bo dieu khien
 	pre1 = e1;
 	ui_p1 = ui1;
@@ -149,12 +154,13 @@ void calculatePIDSpeed(){
 //}
 
 void setHome (void){
-	vt = -400;
+	vt = -100;
 	while (1)
 	{
 		if (HAL_GPIO_ReadPin(S1_GPIO_Port, S1_Pin) &&
 			HAL_GPIO_ReadPin(S2_GPIO_Port, S2_Pin)){
 			vt = 0;
+			home = 0;
 			return;
 		}
 	}
@@ -182,58 +188,27 @@ void driveStepper(int numstep, int dir){
 	//osDelay(2000);
 }
 
-void s6Shoot(void){
+void shootPole(void){
 	osDelay(1000);
-	vt = 1300;
-	osDelay(380);
-	vt = 0;
-	shoot = 0;
+	vt = rpm_shoot[pole - 1];
+	osDelay(delay_shoot[pole - 1]);
 }
 
-void s7Shoot(void){
+void shootManual(void){
 	osDelay(1000);
-	vt = 1295;
-	osDelay(380);
+	vt = manual_rpm;
+	osDelay(manual_delay);
 	vt = 0;
-	shoot = 0;
-}
-
-void s8Shoot(void){
-	osDelay(1000);
-	vt = 1290;
-	osDelay(380);
-	vt = 0;
-	shoot = 0;
-}
-
-void s9Shoot(void){
-	osDelay(1000);
-	vt = 1280;
-	osDelay(380);
-	vt = 0;
-	shoot = 0;
-}
-
-void s10Shoot(void){
-	osDelay(1000);
-	vt = 1285;
-	osDelay(380);
-	vt = 0;
-	shoot = 0;
-}
-
-void s11Shoot(void){
-	osDelay(1000);
-	vt = 1287;
-	osDelay(380);
-	vt = 0;
-	shoot = 0;
+	manual_rpm = 0;
 }
 
 void resetVariables(void){
-	count1 = 0;
+//	count1 = 0;
+	vt = 0;
 	ui1 = 0;
 	ui_p1 = 0;
+	pole = 0;
+	home = 2;
 }
 
 /* USER CODE END 0 */
@@ -579,8 +554,6 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  s2 = HAL_GPIO_ReadPin(S2_GPIO_Port, S2_Pin);
-	  calculatePIDSpeed();
 	  driveSpeed(-dir, pwm);
 	  osDelay(1);
   }
@@ -600,42 +573,17 @@ void StartTask02(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  if (home == 0){
-		  switch(shoot){
-			  case 6:
-				  s6Shoot();
-				  break;
-			  case 7:
-				  s7Shoot();
-				  break;
-			  case 8:
-				  s8Shoot();
-				  break;
-			  case 9:
-				  s9Shoot();
-				  break;
-			  case 10:
-				  s10Shoot();
-				  break;
-			  case 11:
-				  s11Shoot();
-				  break;
-		  }
+	  //home = 0 : in position to shoot
+	  if (home == 0 && pole > 0){
+		  shootPole();
+		  resetVariables();
 	  }
 
-	  resetVariables();
+	  else if (manual_rpm > 0) shootManual();
+
+	  else if (home == 1) setHome();
+
 	  osDelay(1);
-
-
-	  if (home == 1){
-		  setHome();
-	  	  home = 0;
-	  }
-
-//	  driveStepper(round1*1036, 1);
-//	  osDelay(2000);
-//	  driveStepper(round1*1036, 0);
-//	  osDelay(10000);
 
   }
   /* USER CODE END StartTask02 */
@@ -663,6 +611,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   v1Filt = 0.854 * v1Filt + 0.0728 * v1 + 0.0728 * v1Prev;
   v1Prev = v1;
   precount = count1;
+  calculatePIDSpeed();
 
   /* USER CODE END Callback 1 */
 }
