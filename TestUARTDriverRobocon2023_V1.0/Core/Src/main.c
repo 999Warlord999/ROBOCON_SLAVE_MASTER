@@ -67,10 +67,10 @@ void Task_Speed(void const * argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-#define ID 3
+#define ID 2
 
 int BoardID;
-int intial_Rotate = 95;
+int intial_Rotate = 90;
 uint8_t Mode;
 int Dir;
 uint16_t Speed;
@@ -79,29 +79,27 @@ uint16_t Rotate = 90;
 int count1,home;
 int pre_vt;
 int  count1,precount1;
+double e1;
 double v1; // van toc tho
 double v1Filt; // van toc sau khi duoc loc
 double v1Prev; // van toc truoc do phuc vu bo loc
 double v_target; // van toc nham toi
-double e1; // lỗi khâu P
-double ei1; // lỗi khâu I
-double ed1;
 double u1; // tổng
-double kp1 = 0.4,ki1 = 5,kd1=0; // chỉ số khâu P,I
+double kp1 = 0.5,ki1 = 5,kd1=0; // chỉ số khâu P,I
 double up1,ui1,ud1,ui_p1;
 
 int dir , pwm; // biến chieu và tốc độ
 double pos;
 
-int p_target;
-double e2;
-double ei2;
-double ed2;
-double pre_e2;
-double u2;
-double kp2 = 0.4, ki2 = 0.0005, kd2 = 0.3;
-double up2,ui2,ud2,ui_p2;
-int counter2;
+//int p_target;
+//double e2;
+//double ei2;
+//double ed2;
+//double pre_e2;
+//double u2;
+//double kp2 = 0.4, ki2 = 0.0005, kd2 = 0.3;
+//double up2,ui2,ud2,ui_p2;
+//int counter2;
 int preMode;
 
 int mode=3;
@@ -109,7 +107,7 @@ int delay; //control toc do dong co buoc
 int currentAngle; // goc hien tai
 int numstep; //so buoc can di
 int pre_angle;
-double anglePerStep=0.9;//che do /1;
+double anglePerStep=1;//che do /1;
 int angle;//goc can huong toi
 
 
@@ -192,7 +190,8 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -210,6 +209,9 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_4);
+  HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE BEGIN 2 */
   BoardID = ID;
   while(HAL_UART_Receive_IT(&huart1, (uint8_t*)UARTRX1_Buffer, 17)!=HAL_OK){};
@@ -231,7 +233,6 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
-
   /* Create the thread(s) */
   /* definition and creation of TaskPos */
   osThreadDef(TaskPos, Task_Pos, osPriorityNormal, 0, 128);
@@ -603,54 +604,54 @@ void findHome(){// Tim lai nha
 			osDelay(1);
 			if (home == 1)break;
 		}
-		for (stp = 0;stp<200*3;stp++){
-					HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
-					HAL_GPIO_WritePin(STEP_GPIO_Port, STEP_Pin, 1);
-					osDelay(1);
-					HAL_GPIO_WritePin(STEP_GPIO_Port, STEP_Pin, 0);
-					osDelay(1);
-					if (home == 1)break;
-				}
+		for (stp = 0;stp<400*3;stp++){
+			HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
+			HAL_GPIO_WritePin(STEP_GPIO_Port, STEP_Pin, 1);
+			osDelay(1);
+			HAL_GPIO_WritePin(STEP_GPIO_Port, STEP_Pin, 0);
+			osDelay(1);
+			if (home == 1)break;
+		}
 
 
 
 }
 double udf2,uf2_p;
-void posControlPID(){
-
-	e2 = p_target - counter2;
-
-	up2 = kp2*e2;
-	ud2 = kd2*(e2 - pre_e2)/0.001;
-	ui2 = ui_p2 + ki2*e2*0.001;
-	udf2 = (1-0.5)*uf2_p+0.5*ud2;
-
-	pre_e2 = e2;
-	ui_p2 = ui2;
-	uf2_p = udf2;
-
-	u2 = up2 + udf2+ui2;
-	if (u2>0)dir=-1;
-	else if(u2<0)dir = 1;
-	else dir = 0;
-	if(u2>400)u2 =400;
-	else if (u2<-300)u2 =-300;
-	pwm = abs(u2);
-	if ((pwm<130)&&(e2!=0)){
-		pwm = 130;
-
-	}
-}
+//void posControlPID(){
+//
+//	e2 = p_target - counter2;
+//
+//	up2 = kp2*e2;
+//	ud2 = kd2*(e2 - pre_e2)/0.001;
+//	ui2 = ui_p2 + ki2*e2*0.001;
+//	udf2 = (1-0.5)*uf2_p+0.5*ud2;
+//
+//	pre_e2 = e2;
+//	ui_p2 = ui2;
+//	uf2_p = udf2;
+//
+//	u2 = up2 + udf2+ui2;
+//	if (u2>0)dir=-1;
+//	else if(u2<0)dir = 1;
+//	else dir = 0;
+//	if(u2>400)u2 =400;
+//	else if (u2<-300)u2 =-300;
+//	pwm = abs(u2);
+//	if ((pwm<130)&&(e2!=0)){
+//		pwm = 130;
+//
+//	}
+//}
 double pre1;
-double ui1max ,ui1min;
+double ui1max = 1000;
 void calculatePIDSpeed(){
 
 	e1 = v_target - v1; // tinh toan loi ty le
 
 	up1 = kp1*e1;
 	ui1 = ui_p1 + ki1*e1*0.001;
-	if (ui1>20)ui1 = 20;
-	else if(ui1<-20)ui1 = -20;
+	if (ui1>ui1max)ui1 = ui1max;
+	else if(ui1<-ui1max)ui1 = -ui1max;
 	u1 = up1  + ui1; //Tinh tong bo dieu khien
 	pre1 = e1;
 	ui_p1 = ui1;
@@ -700,7 +701,8 @@ void Task_Pos(void const * argument)
 			findHome();
 
 		}
-		else if(home == 1){
+		else if((home == 1)&&(Mode != 3)){
+
 			angle = Rotate;
 			driveStep();
 			osDelay(1);
@@ -717,6 +719,9 @@ void Task_Pos(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_Task_Speed */
+double pre_target ;
+int dir_test;
+int pwr;
 void Task_Speed(void const * argument)
 {
   /* USER CODE BEGIN Task_Speed */
@@ -725,35 +730,26 @@ void Task_Speed(void const * argument)
   {
   if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == 1){
 		  home = 1;
-//		  angle = intial_Rotate;
-//		  currentAngle = intial_Rotate;
 	  }
+  if (Mode == 3){
+	  home = 0;
+	  osDelay(3000);
+	  Mode = 4;
+  }
   	  if (Mode != preMode){
   		 count1 = 0;
   		 precount1 = 0;
   	  }
-  	  if((Mode==3)&&(Rotate == intial_Rotate))
-  		{home = 0;
-  	  Mode = 4;}
-  	  if(Mode == 0 ){
-  			v_target  = Dir*Speed;
-
-		calculatePIDSpeed();
-		driveSpeed(-dir,pwm);
-  	  }
-  	  else if(Mode == 1){
-			p_target  = Dir*Speed;
-
-  		posControlPID();
+  	  if((Mode == 1)||(Mode == 2)){
   		driveSpeed(-dir,pwm);
   	  }
-  	  else if(Mode == 2){
-  		driveSpeed(-Dir,Speed);
+  	  if(Mode == 0){
+  		driveSpeed(0,0);
   	  }
-  	  if (v_target != pre_target){ei1 = 0;}
+  	  if (Mode != preMode){ui_p1 = 0;
+  	  	  	  	  	  	   ui1 = 0;}
   	  pre_target = v_target;
   	  preMode = Mode;
-
     osDelay(1);
   }
   /* USER CODE END Task_Speed */
@@ -776,12 +772,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-  	counter2 = count1;
 	pos = count1 - precount1;
 	v1 = ((pos/0.001)/100)*60; //�?ổi vận tốc qua rpm,(Vận tốc ảo)
 	v1Filt = 0.854 * v1Filt + 0.0728 * v1 + 0.0728 * v1Prev;//Bo loc van toc thong thap
 	v1Prev = v1; //cập nhật biến V1
 	precount1 = count1;
+
+	 if(((Mode == 2 )||(Mode == 1))&&(home == 1)){
+	  		v_target  = Dir*Speed;
+			calculatePIDSpeed();
+	  	  }
 
   /* USER CODE END Callback 1 */
 }

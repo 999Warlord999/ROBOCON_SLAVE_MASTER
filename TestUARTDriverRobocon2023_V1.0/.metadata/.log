@@ -1,0 +1,33 @@
+!SESSION 2023-03-19 11:00:41.155 -----------------------------------------------
+eclipse.buildId=Version 1.11.0
+java.version=11.0.16
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2023-03-19 11:01:17.831
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2023-03-19 11:01:17.884
+!MESSAGE Log4j initialized with config file C:\Users\LENOVO\Desktop\TestUARTDriverRobocon2023_V1.0\TestUARTDriverRobocon2023_V1.0\.metadata\.log4j.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2023-03-19 11:01:25.279
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY org.eclipse.cdt.core 1 0 2023-03-19 11:01:39.536
+!MESSAGE Indexed 'CodeMainRobocon2023_V1.1' (34 sources, 138 headers) in 3.99 sec: 13,575 declarations; 68,425 references; 2 unresolved inclusions; 152 syntax errors; 148 unresolved names (0.18%)
+!SESSION 2023-03-19 11:06:12.336 -----------------------------------------------
+eclipse.buildId=Version 1.11.0
+java.version=11.0.16
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2023-03-19 11:06:20.131
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2023-03-19 11:06:20.178
+!MESSAGE Log4j initialized with config file C:\Users\LENOVO\Desktop\TestUARTDriverRobocon2023_V1.0\TestUARTDriverRobocon2023_V1.0\.metadata\.log4j.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2023-03-19 11:06:31.789
+!MESSAGE Started RMI Server, listening on port 41337

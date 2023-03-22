@@ -61,8 +61,10 @@ void Error_Handler(void);
 #define LED_GPIO_Port GPIOA
 #define CompassReset_Pin GPIO_PIN_4
 #define CompassReset_GPIO_Port GPIOA
-#define CompassReady_Pin GPIO_PIN_5
-#define CompassReady_GPIO_Port GPIOA
+#define CB_thanh_Pin GPIO_PIN_5
+#define CB_thanh_GPIO_Port GPIOA
+#define CB_cot_Pin GPIO_PIN_7
+#define CB_cot_GPIO_Port GPIOA
 #define RelayKhanCap_Pin GPIO_PIN_12
 #define RelayKhanCap_GPIO_Port GPIOB
 
