@@ -132,26 +132,8 @@ void calculatePIDSpeed(){
 	else if (u1<-1000)u1 =-1000;
 	pwm = abs(u1);//Bao hoa xung cap
 
-//	if(pwr > 1000) pwr = 1000;
 }
 
-//void calculatePIDSpeed ()
-//{
-//
-//	//PID algorithm for DC-SPEED
-//	e1 = vt - v1;
-//	ei1 += e1 * 0.001;
-//	u1 = kp1 * e1 + ki1 * ei1;
-//
-//	if(u1 < 0) dir = 1;
-//	else if (u1 > 0) dir = -1;
-//	else dir = 0;
-//	pwr = abs(u1);
-////	if (ei1>100){
-////		ei1 = 100;
-////	}
-//	if(pwm > 1000) pwm = 1000;
-//}
 
 void setHome (void){
 	vt = -100;

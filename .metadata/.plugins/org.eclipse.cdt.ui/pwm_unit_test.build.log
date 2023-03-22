@@ -1,0 +1,10 @@
+20:33:25 **** Build of configuration Debug for project pwm_unit_test ****
+make -j8 all 
+arm-none-eabi-size   pwm_unit_test.elf 
+   text	   data	    bss	    dec	    hex	filename
+  14276	     24	   5720	  20020	   4e34	pwm_unit_test.elf
+Finished building: default.size.stdout
+ 
+
+20:33:26 Build Finished. 0 errors, 0 warnings. (took 403ms)
+
