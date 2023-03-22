@@ -1,0 +1,14 @@
+../Core/Src/main.c:98:6:posControlPID	16	static
+../Core/Src/main.c:132:6:HAL_GPIO_EXTI_Callback	16	static
+../Core/Src/main.c:139:6:ControlMotor	16	static
+../Core/Src/main.c:144:6:driveSpeed	16	static
+../Core/Src/main.c:166:5:main	72	static
+../Core/Src/main.c:250:6:SystemClock_Config	72	static
+../Core/Src/main.c:290:13:MX_TIM2_Init	64	static
+../Core/Src/main.c:353:13:MX_TIM3_Init	32	static
+../Core/Src/main.c:398:13:MX_USART1_UART_Init	8	static
+../Core/Src/main.c:431:13:MX_GPIO_Init	40	static
+../Core/Src/main.c:469:6:Task2_init	16	static
+../Core/Src/main.c:497:6:Task1_init	16	static
+../Core/Src/main.c:518:6:HAL_TIM_PeriodElapsedCallback	24	static
+../Core/Src/main.c:541:6:Error_Handler	4	static,ignoring_inline_asm
