@@ -40,6 +40,9 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
+
 TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart1;
@@ -73,10 +76,12 @@ uint16_t pwm;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_ADC1_Init(void);
 void StartDefaultTask(void const * argument);
 void TaskBlinkLed(void const * argument);
 void TaskUART(void const * argument);
@@ -90,15 +95,15 @@ void Pid_cal(){
 	e2 = goc_target2 - goc_hientai;
 	if(goc_target2>=0){
 		if((e2<goc_target2*(1/3)))
-			{alpha = 0.1;
-			kp2 = 0.08;}
+			{alpha = 0.09;
+			kp2 = 0.075;}
 		else {
 		alpha = 0.8;
 		kp2 = 0.5;}
 	}else{
 		if((e2>goc_target2*(1/3)))
-					{alpha = 0.1;
-					kp2 = 0.08;}
+					{alpha = 0.09;
+					kp2 = 0.075;}
 				else {
 				alpha = 0.8;
 				kp2 = 0.5;}
@@ -272,7 +277,7 @@ int ControlDriver(uint8_t Mode1, int Dir1, uint16_t Speed1, uint16_t Rotate1, ui
 	osDelay(1);
 	return 1;
 }
-
+uint16_t a[10];
 /* USER CODE END 0 */
 
 /**
@@ -305,10 +310,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_TIM2_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -435,6 +442,58 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
 }
 
 /**
@@ -582,6 +641,22 @@ static void MX_USART3_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -654,6 +729,9 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+
+	  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)a, 1);
+	  osDelay(5);
 	  /*Nhấn nút F1*/
 	  if(DataTayGame[7] == 128 && !DangThucThi){
 
@@ -694,11 +772,11 @@ void StartDefaultTask(void const * argument)
 		  if(DataTayGame[7] == 32 && !DangThucThi){
 			  forward = 0;
 			  RotatePid = 0;
-			  ControlDriver(0, 1, 0, 60, 0, -1, 0, 120, 0, 1, 0, 180);
+			  ControlDriver(0, 1, 0, 57, 0, -1, 0, 123, 0, 1, 0, 189);
 
 			  goc_target2 = -90;
 			  RotatePid = 1;
-			  osDelay(5000);
+			  osDelay(8000);
 
 			  RotatePid = 0;
 			  ControlDriver(0, 1, 0, 30, 0, 1, 0, 30, 0, 1, 0, 30);
@@ -714,7 +792,8 @@ void StartDefaultTask(void const * argument)
 		  forward = 0;
 		  RotatePid = 0;
 
-		  ControlDriver(0, 1, 0, 90, 0, 1, 0, 90, 0, 1, 0, 90);
+		  ControlDriver(0, 1, 0, 57, 0, -1, 0, 123, 0, 1, 0, 189);
+
 	  	  DangThucThi = 1;
 	  }
 //
@@ -726,14 +805,34 @@ void StartDefaultTask(void const * argument)
 	  if(DataTayGame[7] == 8 && !DangThucThi){
 		  forward = 0;
 		  RotatePid = 0;
-		  ControlDriver(0, 1, 0, 190, 0, 1, 0, 190, 0, 1, 0, 190);
+		  ControlDriver(0, 1, 0, 189, 0, 1, 0, 189, 0, 1, 0, 189);
 		  osDelay(2000);
-		  goc_target = -90;
-		  v_t = 30;
+		  goc_target = 0;
+		  v_t = -90;
 		  forward = 3 ;
-		  osDelay(4000);
+		  while(a[0]>1000){
+			  if(DataTayGame[2] == 128 && !DangThucThi){
+				  goc_target ++;
+				  DangThucThi =1;
+			  }
+			  if(DataTayGame[2] == 32 && !DangThucThi){
+				  goc_target --;
+				  DangThucThi =1;
+			  }
+			  if(DataTayGame[2] == 0){
+				  DangThucThi = 0;
+			  }
+
+		  }
 		  v_t = 0;
-		  osDelay(1000);
+		osDelay(1000);
+
+		forward = 0;
+		  RotatePid = 0;
+		  ControlDriver(0, 1, 0, 189, 0, 1, 0, 189, 0, 1, 0, 189);
+//		  osDelay(4000);
+//		  v_t = 0;
+//		  osDelay(1000);
 
 	  	  DangThucThi = 1;
 	  }
@@ -749,7 +848,7 @@ void StartDefaultTask(void const * argument)
 					  }
 //	  goc_target2  -= 90;
 		  forward = 0;
-		  ControlDriver(0, 1, 0, 60, 0, -1, 0, 120, 0, 1, 0, 180);
+		  ControlDriver(0, 1, 0, 57, 0, -1, 0, 123, 0, 1, 0, 189);
 		  osDelay(1000);
 		  RotatePid = 1;
 //		  forward = 0;
@@ -766,6 +865,7 @@ void StartDefaultTask(void const * argument)
 	  if(DataTayGame[7] == 0){
 		  DangThucThi = 0;
 	  }
+
 
 	  osDelay(1);
   }
@@ -838,6 +938,9 @@ void TaskXoayLaBan(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+
+	  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)a, 1);
+	  osDelay(5);
 	  if(forward == 1){
 	  		  ControlDriver(1, -1, v_t, (90-0.8*e1), 1, -1, v_t, (90-0.8*e1), 1, -1, v_t, (90+0.8*e1));
 	  		  osDelay(1);
@@ -846,16 +949,24 @@ void TaskXoayLaBan(void const * argument)
 		  osDelay(1);
 	  }
 	  if(RotatePid == 1){
-		  ControlDriver(2, -dir2, pwm, 60,2 , dir2, pwm, 120, 2, -dir2, pwm, 180);
+		  ControlDriver(2, -dir2, pwm, 57,2 , dir2, pwm, 123, 2, -dir2, pwm, 189);
 	  }
 	  if((forward == 2)){
 		  ControlDriver(1, 1, v_t, (30+1*e1), 1, 1, v_t, (30+1*e1), 1, 1, v_t, (30-1*e1));
 		  osDelay(1);
 	  }
 	  if((forward == 3)){
-	  		  ControlDriver(1, -1, v_t, (190-1*e1), 1, -1, v_t, (190+1*e1), 1, -1, v_t, (190-1*e1));
+	  		  ControlDriver(1, -1, v_t, (189-1*e1), 1, -1, v_t, (189+1*e1), 1, -1, v_t, (189+0.8*e1));
 	  		  osDelay(1);
 	  	  }
+//	  if(DataTayGame[2] == 128 && !DangThucThi){
+//		  goc_target--;
+//	  	 	  	  DangThucThi = 1;
+//	  	 	  }
+//	  if(DataTayGame[2] == 32 && !DangThucThi){
+//	  		  goc_target++;
+//	  	  	 	  	  DangThucThi = 1;
+//	  	  	 	  }
 
 
   }
