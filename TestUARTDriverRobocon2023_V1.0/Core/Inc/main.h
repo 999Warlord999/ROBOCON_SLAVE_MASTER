@@ -70,6 +70,7 @@ void Error_Handler(void);
 #define ENC_DC2_EXTI_IRQn EXTI15_10_IRQn
 #define HOME_Pin GPIO_PIN_8
 #define HOME_GPIO_Port GPIOA
+#define HOME_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
 

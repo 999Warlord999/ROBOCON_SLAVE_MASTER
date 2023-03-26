@@ -56,6 +56,9 @@ default.size.stdout \
 OBJDUMP_LIST += \
 CodeMainRobocon2023_V1.1.list \
 
+OBJCOPY_HEX += \
+CodeMainRobocon2023_V1.1.hex \
+
 
 # All Target
 all: main-build
@@ -64,8 +67,8 @@ all: main-build
 main-build: CodeMainRobocon2023_V1.1.elf secondary-outputs
 
 # Tool invocations
-CodeMainRobocon2023_V1.1.elf CodeMainRobocon2023_V1.1.map: $(OBJS) $(USER_OBJS) C:\Users\LENOVO\Desktop\TestUARTDriverRobocon2023_V1.0\CodeMainRobocon2023_V1.1\STM32F407VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "CodeMainRobocon2023_V1.1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\LENOVO\Desktop\TestUARTDriverRobocon2023_V1.0\CodeMainRobocon2023_V1.1\STM32F407VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="CodeMainRobocon2023_V1.1.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+CodeMainRobocon2023_V1.1.elf CodeMainRobocon2023_V1.1.map: $(OBJS) $(USER_OBJS) C:\Users\LENOVO\Desktop\ancient_robocon_code\CodeMainRobocon2023_V1.1\STM32F407VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "CodeMainRobocon2023_V1.1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\LENOVO\Desktop\ancient_robocon_code\CodeMainRobocon2023_V1.1\STM32F407VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="CodeMainRobocon2023_V1.1.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -79,12 +82,17 @@ CodeMainRobocon2023_V1.1.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_T
 	@echo 'Finished building: $@'
 	@echo ' '
 
+CodeMainRobocon2023_V1.1.hex: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O ihex $(EXECUTABLES) "CodeMainRobocon2023_V1.1.hex"
+	@echo 'Finished building: $@'
+	@echo ' '
+
 # Other Targets
 clean:
-	-$(RM) CodeMainRobocon2023_V1.1.elf CodeMainRobocon2023_V1.1.list CodeMainRobocon2023_V1.1.map default.size.stdout
+	-$(RM) CodeMainRobocon2023_V1.1.elf CodeMainRobocon2023_V1.1.hex CodeMainRobocon2023_V1.1.list CodeMainRobocon2023_V1.1.map default.size.stdout
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_HEX)
 
 fail-specified-linker-script-missing:
 	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'

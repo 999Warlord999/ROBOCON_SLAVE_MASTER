@@ -67,14 +67,17 @@ void Task_Speed(void const * argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-#define ID 2
+#define ID 3
 
 int BoardID;
-int intial_Rotate = 90;
+int intial_Rotate = 300;
 uint8_t Mode;
 int Dir;
 uint16_t Speed;
-uint16_t Rotate = 90;
+uint16_t Rotate ;
+
+
+
 //PID_SPEED_VAR:
 int count1,home;
 int pre_vt;
@@ -190,8 +193,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -209,10 +211,10 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_4);
   HAL_TIM_Base_Start_IT(&htim3);
-  /* USER CODE BEGIN 2 */
   BoardID = ID;
   while(HAL_UART_Receive_IT(&huart1, (uint8_t*)UARTRX1_Buffer, 17)!=HAL_OK){};
 
@@ -233,6 +235,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
+
   /* Create the thread(s) */
   /* definition and creation of TaskPos */
   osThreadDef(TaskPos, Task_Pos, osPriorityNormal, 0, 128);
@@ -512,6 +515,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(HOME_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -534,29 +540,20 @@ int vPos;
 void driveStep(){
 	int n =0;
 
-	if(angle > 500){angle = currentAngle;}
+	if(angle > 1000){angle = currentAngle;}
 		if( currentAngle != angle ){
 //			vPos = 0;
 			if( currentAngle < angle){
 				HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1);
 				n = angle - currentAngle;
-				numstep = n/anglePerStep *3;
+				numstep = n;
 			}
 			else if( currentAngle > angle){
 				HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
 				n = currentAngle - angle;
-				if( angle == 0){
-					n = currentAngle;
-				}
-				numstep = n/anglePerStep *3;
+				numstep = n;
 			}
 			for(int x = 0; x < numstep; x++) {
-				if (angle == intial_Rotate){
-					if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == 1){
-	//				  home = 1;
-					  break;
-				  }
-				}
 //				if ((x > 3/5*numstep)&&(x<4/5*numstep)){delay = 2;}
 //				else if (x>4/5*numstep)  delay = 3;
 //				else delay = 1;
@@ -697,8 +694,17 @@ void Task_Pos(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	  if (Mode == 3){
+	  	  home = 0;
+	  	  osDelay(3000);
+	  	  Mode = 4;
+	    }
+	  if (HAL_GPIO_ReadPin(HOME_GPIO_Port, HOME_Pin) == 1){
+			  home = 1;
+		  }
 	  if (home == 0){
 			findHome();
+
 
 		}
 		else if((home == 1)&&(Mode != 3)){
@@ -719,23 +725,14 @@ void Task_Pos(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_Task_Speed */
-double pre_target ;
-int dir_test;
-int pwr;
 void Task_Speed(void const * argument)
 {
   /* USER CODE BEGIN Task_Speed */
   /* Infinite loop */
   for(;;)
   {
-  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == 1){
-		  home = 1;
-	  }
-  if (Mode == 3){
-	  home = 0;
-	  osDelay(3000);
-	  Mode = 4;
-  }
+
+
   	  if (Mode != preMode){
   		 count1 = 0;
   		 precount1 = 0;
@@ -748,7 +745,6 @@ void Task_Speed(void const * argument)
   	  }
   	  if (Mode != preMode){ui_p1 = 0;
   	  	  	  	  	  	   ui1 = 0;}
-  	  pre_target = v_target;
   	  preMode = Mode;
     osDelay(1);
   }

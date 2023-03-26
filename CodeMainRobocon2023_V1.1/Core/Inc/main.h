@@ -49,6 +49,8 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -63,10 +65,14 @@ void Error_Handler(void);
 #define CompassReset_GPIO_Port GPIOA
 #define CB_thanh_Pin GPIO_PIN_5
 #define CB_thanh_GPIO_Port GPIOA
-#define CB_cot_Pin GPIO_PIN_7
-#define CB_cot_GPIO_Port GPIOA
-#define RelayKhanCap_Pin GPIO_PIN_12
-#define RelayKhanCap_GPIO_Port GPIOB
+#define UpperRingSS_Pin GPIO_PIN_7
+#define UpperRingSS_GPIO_Port GPIOA
+#define Dir_Pin GPIO_PIN_15
+#define Dir_GPIO_Port GPIOE
+#define En_Pin GPIO_PIN_12
+#define En_GPIO_Port GPIOB
+#define cb_vong_Pin GPIO_PIN_12
+#define cb_vong_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 

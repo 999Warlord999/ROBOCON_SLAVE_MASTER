@@ -64,8 +64,8 @@ all: main-build
 main-build: TestUARTDriverRobocon2023_V1.0.elf secondary-outputs
 
 # Tool invocations
-TestUARTDriverRobocon2023_V1.0.elf TestUARTDriverRobocon2023_V1.0.map: $(OBJS) $(USER_OBJS) C:\Users\LENOVO\Desktop\TestUARTDriverRobocon2023_V1.0\TestUARTDriverRobocon2023_V1.0\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "TestUARTDriverRobocon2023_V1.0.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\LENOVO\Desktop\TestUARTDriverRobocon2023_V1.0\TestUARTDriverRobocon2023_V1.0\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="TestUARTDriverRobocon2023_V1.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+TestUARTDriverRobocon2023_V1.0.elf TestUARTDriverRobocon2023_V1.0.map: $(OBJS) $(USER_OBJS) C:\Users\LENOVO\Desktop\ancient_robocon_code\TestUARTDriverRobocon2023_V1.0\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "TestUARTDriverRobocon2023_V1.0.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\LENOVO\Desktop\ancient_robocon_code\TestUARTDriverRobocon2023_V1.0\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="TestUARTDriverRobocon2023_V1.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
