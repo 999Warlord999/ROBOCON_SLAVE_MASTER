@@ -23,7 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdlib.h"
-//#include "PID.h"
+#include "gunPID.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,8 +33,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SIZE_BUF 4
-#define END_OF_TRANSMISSION 149
+#define DC_FORWARD 1
+#define DC_BACKWARD 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -67,22 +67,12 @@ double ki1 = 20;
 double ui_p1, ui1, up1, pre1;
 int dir;
 int pwm;
-int s1, s2;
-int pole = -1;
-int home = -1;
+uint8_t pole;
+uint8_t home = 2;
 uint16_t manual_rpm, manual_delay;
-int round1 = 3;
-float angleZ, input;
-uint16_t rpm_shoot[] = {500, 500, 500, 500, 500, 920};
-uint16_t delay_shoot[] = {450, 450, 450, 450, 450, 300};
-
-//rpm = 500 ~ delay = 450: pole 1, 2, 3 of ER
-//rpm = 920 ~ delay = 300: center pole or ER
-
-
-char UARTRX1_Buffer[3];
-char DataMain[3];
-
+uint16_t rpm_shoot[] = {1300, 1295, 1400, 1000, 1100, 1200};
+uint16_t delay_shoot[] = {305, 305, 305, 305, 305, 305};
+PID_Param pidParam;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -101,63 +91,20 @@ void StartTask02(void const * argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	if(huart->Instance == USART1){
-		HAL_UART_Receive_IT(&huart1, (uint8_t*)UARTRX1_Buffer, sizeof(UARTRX1_Buffer));
-
-		int ViTriData = -1;
-		for(uint8_t i = 0; i <= sizeof(UARTRX1_Buffer); ++i){
-			if(UARTRX1_Buffer[i] == END_OF_TRANSMISSION ){
-				ViTriData = i;
-			}
-		}
-
-		if(ViTriData != -1){
-			int cnt = 0;
-			while(cnt <= sizeof(UARTRX1_Buffer)){
-				DataMain[cnt] = UARTRX1_Buffer[ViTriData];
-				++ViTriData;
-				if(ViTriData == 4){
-					ViTriData = 0;
-				}
-				++cnt;
-			}
-		}
-
-		pole = DataMain[1];
-
-//		if(BoardID == 1){
-//			Mode = (DataMain[1] >> 1) & 3;
-//			if((DataMain[1] & 1) == 0){
-//				Dir = -1;
-//			}
-//			else if((DataMain[1] & 1) == 1){
-//				Dir = 1;
-//			}
-//
-//			Speed = DataMain[2] << 8 | DataMain[3];
-//			Rotate = DataMain[4] << 8 | DataMain[5];
-//		}
-
-	}
-}
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	//Encoder DC-SPEED
-	if (GPIO_Pin == GPIO_PIN_10){
-		if (HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_1) == 0) count1++;
+	if (GPIO_Pin == ENC_DC1_Pin){
+		if (!HAL_GPIO_ReadPin(ENC_DC2_GPIO_Port,ENC_DC2_Pin)) count1++;
 		else count1--;
 	}
-
-
 }
-
 void driveSpeed(int dir , int pwmVal){
-	if (dir == -1){
+	if (dir == DC_FORWARD){
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, pwmVal);
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
 	}
-	else if (dir == 1){
+	else if (dir == DC_BACKWARD){
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, pwmVal);
 	}
@@ -167,59 +114,20 @@ void driveSpeed(int dir , int pwmVal){
 	}
 }
 
-void calculatePIDSpeed(){
 
-	e1 = vt - v1; // tinh toan loi ty le
-
-	up1 = kp1*e1;
-	ui1 = ui_p1 + ki1*e1*0.001;
-	if (ui1 > 1000) ui1 = 1000;
-	else if (ui1 < -1000) ui1 = -1000;
-	u1 = up1  + ui1; //Tinh tong bo dieu khien
-	pre1 = e1;
-	ui_p1 = ui1;
-	if(u1 < 0) dir = 1; //bien doi chiue vong quay
-	else dir = -1;
-
-	if(u1>1000)u1 =1000;
-	else if (u1<-1000)u1 =-1000;
-	pwm = abs(u1);//Bao hoa xung cap
-
-}
 
 
 void setHome (void){
 	vt = -100;
 	while (1)
 	{
-		if (HAL_GPIO_ReadPin(S1_GPIO_Port, S1_Pin) &&
-			HAL_GPIO_ReadPin(S2_GPIO_Port, S2_Pin)){
+		if (HAL_GPIO_ReadPin(InfraredSensor_GPIO_Port, InfraredSensor_Pin) &&
+			HAL_GPIO_ReadPin(LaserSensor_GPIO_Port, LaserSensor_Pin)){
 			vt = 0;
-			break;
+			home = 0;
+			return;
 		}
 	}
-}
-
-void delay_us (uint16_t us)
-{
-    __HAL_TIM_SET_COUNTER(&htim2,0);  // set the counter value a 0
-    while (__HAL_TIM_GET_COUNTER(&htim2) < us);  // wait for the counter to reach the us input in the parameter
-}
-
-
-void driveStepper(int numstep, int dir){
-	if (dir > 0 ) HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1);
-	else HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
-
-//	 HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
-	for (int i = 0; i <= numstep; i++){
-		HAL_GPIO_WritePin(STEP_GPIO_Port, STEP_Pin, 0);
-		delay_us(400);
-		HAL_GPIO_WritePin(STEP_GPIO_Port, STEP_Pin, 1);
-		delay_us(400);
-	}
-
-	//osDelay(2000);
 }
 
 void shootPole(void){
@@ -228,21 +136,14 @@ void shootPole(void){
 	osDelay(delay_shoot[pole - 1]);
 }
 
-void shootManual(uint16_t rpm,uint16_t delay){
+void shootManual(void){
 	osDelay(1000);
-	vt = rpm;
-	osDelay(delay);
+	vt = manual_rpm;
+	osDelay(manual_delay);
 	vt = 0;
+	manual_rpm = 0;
 }
 
-void resetVariables(void){
-//	count1 = 0;
-	vt = 0;
-	ui1 = 0;
-	ui_p1 = 0;
-	pole = -1;
-	home = -1;
-}
 
 /* USER CODE END 0 */
 
@@ -283,7 +184,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_4);
   HAL_TIM_Base_Start_IT(&htim3);
-  while(HAL_UART_Receive_IT(&huart1, (uint8_t*)UARTRX1_Buffer, 3)!=HAL_OK){};
+
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -304,11 +205,11 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityAboveNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityLow, 0, 64);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of myTask02 */
-  osThreadDef(myTask02, StartTask02, osPriorityNormal, 0, 128);
+  osThreadDef(myTask02, StartTask02, osPriorityNormal, 0, 64);
   myTask02Handle = osThreadCreate(osThread(myTask02), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -437,7 +338,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 72-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 1000-1;
+  htim2.Init.Period = 100-1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -580,8 +481,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : S1_Pin S2_Pin */
-  GPIO_InitStruct.Pin = S1_Pin|S2_Pin;
+  /*Configure GPIO pins : InfraredSensor_Pin LaserSensor_Pin */
+  GPIO_InitStruct.Pin = InfraredSensor_Pin|LaserSensor_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -640,25 +541,15 @@ void StartTask02(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  s1 = HAL_GPIO_ReadPin(S1_GPIO_Port, S1_Pin);
-	  s2 = HAL_GPIO_ReadPin(S2_GPIO_Port, S2_Pin);
 	  //home = 0 : in position to shoot
-	  if (pole > 0){
-		  setHome();
+	  if (home == 0 && pole > 0){
 		  shootPole();
 		  resetVariables();
 	  }
 
-	  else if (manual_rpm > 0){
-		  setHome();
-		  shootManual(manual_rpm, manual_delay);
-		  manual_rpm = 0;
-	  }
+	  else if (manual_rpm > 0) shootManual();
 
-	  else if (home == 1){
-		  setHome();
-		  resetVariables();
-	  }
+	  else if (home == 1) setHome();
 
 	  osDelay(1);
 
@@ -683,11 +574,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-  pos = count1 - precount;
-  v1 = ((pos / 0.001) / (200)) * 60;
-  v1Filt = 0.854 * v1Filt + 0.0728 * v1 + 0.0728 * v1Prev;
-  v1Prev = v1;
-  precount = count1;
+  if (htim->Instance == TIM3) {
+	pos = count1 - precount;
+	v1 = ((pos / 0.001) / (200)) * 60;
+	v1Filt = 0.854 * v1Filt + 0.0728 * v1 + 0.0728 * v1Prev;
+	v1Prev = v1;
+	precount = count1;
+	pidParam.currVal = v1;
+  }
+
   calculatePIDSpeed();
 
   /* USER CODE END Callback 1 */

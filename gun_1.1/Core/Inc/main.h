@@ -63,15 +63,15 @@ void Error_Handler(void);
 #define DIR_GPIO_Port GPIOA
 #define STEP_Pin GPIO_PIN_5
 #define STEP_GPIO_Port GPIOA
-#define S1_Pin GPIO_PIN_7
-#define S1_GPIO_Port GPIOA
+#define InfraredSensor_Pin GPIO_PIN_7
+#define InfraredSensor_GPIO_Port GPIOA
 #define ENC_DC2_Pin GPIO_PIN_1
 #define ENC_DC2_GPIO_Port GPIOB
 #define ENC_DC1_Pin GPIO_PIN_10
 #define ENC_DC1_GPIO_Port GPIOB
 #define ENC_DC1_EXTI_IRQn EXTI15_10_IRQn
-#define S2_Pin GPIO_PIN_8
-#define S2_GPIO_Port GPIOA
+#define LaserSensor_Pin GPIO_PIN_8
+#define LaserSensor_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
