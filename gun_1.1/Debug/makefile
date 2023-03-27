@@ -9,6 +9,7 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include RoboconLibrary/Src/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/subdir.mk
@@ -64,8 +65,8 @@ all: main-build
 main-build: gun_1.1.elf secondary-outputs
 
 # Tool invocations
-gun_1.1.elf gun_1.1.map: $(OBJS) $(USER_OBJS) C:\Users\ADMIN\Desktop\ROBOCON_SLAVE_MASTER\gun_1.1\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "gun_1.1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\ADMIN\Desktop\ROBOCON_SLAVE_MASTER\gun_1.1\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="gun_1.1.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+gun_1.1.elf gun_1.1.map: $(OBJS) $(USER_OBJS) G:\IoTVision\Project\Robocon\ROBOCON_SLAVE_MASTER\gun_1.1\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "gun_1.1.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"G:\IoTVision\Project\Robocon\ROBOCON_SLAVE_MASTER\gun_1.1\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="gun_1.1.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

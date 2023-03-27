@@ -27,23 +27,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000029  00000000  00000000  0002003c  2**0
                   CONTENTS, READONLY
- 12 .debug_info   0000db71  00000000  00000000  00020065  2**0
+ 12 .debug_info   0000db70  00000000  00000000  00020065  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 000024fa  00000000  00000000  0002dbd6  2**0
+ 13 .debug_abbrev 0000250b  00000000  00000000  0002dbd5  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00000e70  00000000  00000000  000300d0  2**3
+ 14 .debug_aranges 00000e70  00000000  00000000  000300e0  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_ranges 00000d58  00000000  00000000  00030f40  2**3
+ 15 .debug_ranges 00000d58  00000000  00000000  00030f50  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  000188ee  00000000  00000000  00031c98  2**0
+ 16 .debug_macro  000188ee  00000000  00000000  00031ca8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   0000ec46  00000000  00000000  0004a586  2**0
+ 17 .debug_line   0000ead9  00000000  00000000  0004a596  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    0008f438  00000000  00000000  000591cc  2**0
+ 18 .debug_str    0008f43e  00000000  00000000  0005906f  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000050  00000000  00000000  000e8604  2**0
+ 19 .comment      00000050  00000000  00000000  000e84ad  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00003ccc  00000000  00000000  000e8654  2**2
+ 20 .debug_frame  00003ccc  00000000  00000000  000e8500  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -1154,7 +1154,6 @@ void calculatePIDSpeed(){
  8000c96:	4a12      	ldr	r2, [pc, #72]	; (8000ce0 <calculatePIDSpeed+0x1c0>)
  8000c98:	6013      	str	r3, [r2, #0]
 
-//	if(pwr > 1000) pwr = 1000;
 }
  8000c9a:	bf00      	nop
  8000c9c:	bd80      	pop	{r7, pc}
@@ -1178,10 +1177,7 @@ void calculatePIDSpeed(){
  8000ce0:	200003f4 	.word	0x200003f4
 
 08000ce4 <setHome>:
-////		ei1 = 100;
-////	}
-//	if(pwm > 1000) pwm = 1000;
-//}
+
 
 void setHome (void){
  8000ce4:	b580      	push	{r7, lr}
