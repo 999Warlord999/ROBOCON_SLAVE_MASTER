@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdlib.h"
+//#include "PID.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,6 +33,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define SIZE_BUF 4
+#define END_OF_TRANSMISSION 149
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,6 +46,8 @@
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+
+UART_HandleTypeDef huart1;
 
 osThreadId defaultTaskHandle;
 osThreadId myTask02Handle;
@@ -63,13 +68,20 @@ double ui_p1, ui1, up1, pre1;
 int dir;
 int pwm;
 int s1, s2;
-uint8_t pole;
-uint8_t home = 2;
+int pole = -1;
+int home = -1;
 uint16_t manual_rpm, manual_delay;
 int round1 = 3;
 float angleZ, input;
-uint16_t rpm_shoot[] = {1300, 1295, 1400, 1000, 1100, 1200};
-uint16_t delay_shoot[] = {305, 305, 305, 305, 305, 305};
+uint16_t rpm_shoot[] = {500, 500, 500, 500, 500, 920};
+uint16_t delay_shoot[] = {450, 450, 450, 450, 450, 300};
+
+//rpm = 500 ~ delay = 450: pole 1, 2, 3 of ER
+//rpm = 920 ~ delay = 300: center pole or ER
+
+
+char UARTRX1_Buffer[3];
+char DataMain[3];
 
 /* USER CODE END PV */
 
@@ -79,6 +91,7 @@ static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void const * argument);
 void StartTask02(void const * argument);
 
@@ -88,6 +101,46 @@ void StartTask02(void const * argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+	if(huart->Instance == USART1){
+		HAL_UART_Receive_IT(&huart1, (uint8_t*)UARTRX1_Buffer, sizeof(UARTRX1_Buffer));
+
+		int ViTriData = -1;
+		for(uint8_t i = 0; i <= sizeof(UARTRX1_Buffer); ++i){
+			if(UARTRX1_Buffer[i] == END_OF_TRANSMISSION ){
+				ViTriData = i;
+			}
+		}
+
+		if(ViTriData != -1){
+			int cnt = 0;
+			while(cnt <= sizeof(UARTRX1_Buffer)){
+				DataMain[cnt] = UARTRX1_Buffer[ViTriData];
+				++ViTriData;
+				if(ViTriData == 4){
+					ViTriData = 0;
+				}
+				++cnt;
+			}
+		}
+
+		pole = DataMain[1];
+
+//		if(BoardID == 1){
+//			Mode = (DataMain[1] >> 1) & 3;
+//			if((DataMain[1] & 1) == 0){
+//				Dir = -1;
+//			}
+//			else if((DataMain[1] & 1) == 1){
+//				Dir = 1;
+//			}
+//
+//			Speed = DataMain[2] << 8 | DataMain[3];
+//			Rotate = DataMain[4] << 8 | DataMain[5];
+//		}
+
+	}
+}
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	//Encoder DC-SPEED
@@ -142,8 +195,7 @@ void setHome (void){
 		if (HAL_GPIO_ReadPin(S1_GPIO_Port, S1_Pin) &&
 			HAL_GPIO_ReadPin(S2_GPIO_Port, S2_Pin)){
 			vt = 0;
-			home = 0;
-			return;
+			break;
 		}
 	}
 }
@@ -176,12 +228,11 @@ void shootPole(void){
 	osDelay(delay_shoot[pole - 1]);
 }
 
-void shootManual(void){
+void shootManual(uint16_t rpm,uint16_t delay){
 	osDelay(1000);
-	vt = manual_rpm;
-	osDelay(manual_delay);
+	vt = rpm;
+	osDelay(delay);
 	vt = 0;
-	manual_rpm = 0;
 }
 
 void resetVariables(void){
@@ -189,8 +240,8 @@ void resetVariables(void){
 	vt = 0;
 	ui1 = 0;
 	ui_p1 = 0;
-	pole = 0;
-	home = 2;
+	pole = -1;
+	home = -1;
 }
 
 /* USER CODE END 0 */
@@ -226,12 +277,13 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim1);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_4);
   HAL_TIM_Base_Start_IT(&htim3);
-
+  while(HAL_UART_Receive_IT(&huart1, (uint8_t*)UARTRX1_Buffer, 3)!=HAL_OK){};
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -472,6 +524,39 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_9B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_ODD;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -555,15 +640,25 @@ void StartTask02(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	  s1 = HAL_GPIO_ReadPin(S1_GPIO_Port, S1_Pin);
+	  s2 = HAL_GPIO_ReadPin(S2_GPIO_Port, S2_Pin);
 	  //home = 0 : in position to shoot
-	  if (home == 0 && pole > 0){
+	  if (pole > 0){
+		  setHome();
 		  shootPole();
 		  resetVariables();
 	  }
 
-	  else if (manual_rpm > 0) shootManual();
+	  else if (manual_rpm > 0){
+		  setHome();
+		  shootManual(manual_rpm, manual_delay);
+		  manual_rpm = 0;
+	  }
 
-	  else if (home == 1) setHome();
+	  else if (home == 1){
+		  setHome();
+		  resetVariables();
+	  }
 
 	  osDelay(1);
 
