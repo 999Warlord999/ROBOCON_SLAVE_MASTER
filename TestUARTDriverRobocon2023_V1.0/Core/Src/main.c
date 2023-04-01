@@ -67,7 +67,7 @@ void Task_Speed(void const * argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-#define ID 3
+#define ID 1
 
 int BoardID;
 int intial_Rotate = 300;
@@ -564,28 +564,7 @@ void driveStep(){
 			}
 
 			currentAngle = angle;
-
-//			if((angle == intial_Rotate)&&HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) != 1){
-//				if(pre_angle < currentAngle){
-//					HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1);
-//				}else if(pre_angle > currentAngle){
-//					HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
-//				}
-//				HAL_GPIO_WritePin(STEP_GPIO_Port, STEP_Pin, 1);
-//				osDelay(1);
-//				HAL_GPIO_WritePin(STEP_GPIO_Port, STEP_Pin, 0);
-//				osDelay(1);
-//			}
-//			pre_angle = currentAngle;
 		}
-
-//
-//		if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == 1){
-////				  home = 1;
-//				  angle = intial_Rotate;
-//				  currentAngle = intial_Rotate;
-//			  }
-////	vPos = 1;
 }
 int stp;
 void findHome(){// Tim lai nha
@@ -742,9 +721,12 @@ void Task_Speed(void const * argument)
   	  }
   	  if(Mode == 0){
   		driveSpeed(0,0);
+  		count1=0;precount1 =0;
+  		ui_p1 = 0;ui1 = 0;
   	  }
   	  if (Mode != preMode){ui_p1 = 0;
-  	  	  	  	  	  	   ui1 = 0;}
+  	  	  	  	  	  	   ui1 = 0;
+  	  }
   	  preMode = Mode;
     osDelay(1);
   }
@@ -768,16 +750,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-	pos = count1 - precount1;
-	v1 = ((pos/0.001)/100)*60; //�?ổi vận tốc qua rpm,(Vận tốc ảo)
-	v1Filt = 0.854 * v1Filt + 0.0728 * v1 + 0.0728 * v1Prev;//Bo loc van toc thong thap
-	v1Prev = v1; //cập nhật biến V1
-	precount1 = count1;
+  if (htim->Instance == TIM3) {
+	  pos = count1 - precount1;
+	  	v1 = ((pos/0.001)/100)*60; //�?ổi vận tốc qua rpm,(Vận tốc ảo)
+	  	v1Filt = 0.854 * v1Filt + 0.0728 * v1 + 0.0728 * v1Prev;//Bo loc van toc thong thap
+	  	v1Prev = v1; //cập nhật biến V1
+	  	precount1 = count1;
+	  	 if(((Mode == 2 )||(Mode == 1))&&(home == 1)){
+	  	  		v_target  = Dir*Speed;
+	  			calculatePIDSpeed();
+	  	  	  }
+    }
 
-	 if(((Mode == 2 )||(Mode == 1))&&(home == 1)){
-	  		v_target  = Dir*Speed;
-			calculatePIDSpeed();
-	  	  }
 
   /* USER CODE END Callback 1 */
 }

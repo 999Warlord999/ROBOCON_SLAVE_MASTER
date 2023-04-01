@@ -76,7 +76,7 @@ double pre_e2;
 double up2,ui2,ui_p2,ud2,udf2,uf2_p;
 double u2;
 double kp2 = 0.05, kd2 = 2;
-
+long t;
 int RotatePid,Dir2;
 uint16_t pwm;
 /* USER CODE END PV */
@@ -101,27 +101,34 @@ void TaskXoayLaBan(void const * argument);
 /* USER CODE BEGIN PFP */
 
 /*G�?i trong  HAL_TIM_PeriodElapsedCallback*/
+uint8_t fuzzy;
 double alpha;
 void Pid_cal(){
 	e2 = goc_target2 - goc_hientai;
-	if(goc_target2>=0){
-		if((e2<goc_target2*(1/3)))
-			{alpha = 0.09;
-			kp2 = 0.075;}
-		else {
-		alpha = 0.8;
-		kp2 = 0.5;}
-	}else{
-		if((e2>goc_target2*(1/3)))
-					{alpha = 0.09;
-				kp2 = 0.075;}
+	if (fuzzy == 0){
+		if(goc_target2>=0){
+				if((e2<goc_target2*(1/5)))
+					{alpha = 0.08;
+					kp2 = 0.08;}
 				else {
-				alpha = 0.8;
-				kp2 = 0.05;}
+				alpha = 0.9;
+				kp2 = 0.9;}
+			}else{
+				if((e2>goc_target2*(1/5)))
+							{alpha = 0.08;
+						kp2 = 0.08;}
+						else {
+						alpha = 0.9;
+						kp2 = 0.9;}
+			}
+	}else if (fuzzy == 1){
+		alpha = 0.08;
+		kp2 = 0.05;
 	}
 
+
 	    up2 = kp2*e2;
-		ud2 = kd2*(e2 - pre_e2)/0.002;
+		ud2 = kd2*(e2 - pre_e2)/0.001;
 //		ui2 = ui_p2 + ki2*e2*0.001;
 		udf2 = (1-alpha)*uf2_p+alpha*ud2;
 
@@ -139,8 +146,8 @@ void Pid_cal(){
 		if (u2> 300)u2 =300;//180
 		else if (u2<-300)u2=-300;//-180
 		pwm = abs(u2);
-		if((pwm < 10)&&(e2!=0)){//85
-			pwm = 10;
+		if((pwm < 28)&&(e2!=0)){//85
+			pwm = 28;
 		}
 }
 /* USER CODE END PFP */
@@ -362,7 +369,7 @@ int main(void)
 
 //  HAL_Delay(100);
 //
-//  while(1){
+// while(1){
 //	  if(HAL_GPIO_ReadPin(CompassReady_GPIO_Port, CompassReady_Pin)){
 //		  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 //		  System.CompassStatus = 1;
@@ -372,7 +379,7 @@ int main(void)
 //	  HAL_Delay(200);
 //	  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 //	  HAL_Delay(800);
-//  }
+// }
 
 
 
@@ -598,7 +605,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 72-1;
+  htim3.Init.Prescaler = 84-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 1000-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -653,6 +660,7 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
 
@@ -660,11 +668,20 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 72-1;
+  htim4.Init.Prescaler = 84-1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 1000-1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
   {
     Error_Handler();
@@ -935,10 +952,8 @@ int pre_t = -88;
 //  }
 //}
 void batthanh(void){
-	v_t = 20;
+	v_t = 55;
 	forward = 2;
-	osDelay(3000);
-	v_t =8;
 
 	while(1){
 
@@ -954,7 +969,7 @@ void batthanh(void){
 		osDelay(1);
 	}
 }
-
+uint8_t antinoise;
 void batcot(void){
 	while(1){
 		if(DataTayGame[2] == 128 && !DangThucThi2){
@@ -969,16 +984,22 @@ void batcot(void){
 				DangThucThi2 = 0;
 				}
 				goc_target = pre_t;
-			if(a[0]>700&&a[0]<3000){
-				v_t = 0;
-				osDelay(1000);
-				forward = 0;
-				RotatePid = 0;
-				return;
+			if(a[0]>2000&&a[0]<3300){
+				antinoise ++;
 			}
+				if(antinoise > 20){
+					v_t = 0;
+					osDelay(1000);
+					forward = 0;
+					RotatePid = 0;
+
+					return;
+					}
+			}
+
 			osDelay(1);
 }
-}
+
 
 
 void batvong(void){
@@ -996,16 +1017,16 @@ int gun;
 double e9,pre_e9;
 double current_value9;
 int POS_target = 0;
-double deltaT9 = 0.002; // Th�?i gian lấy mẫu
+double deltaT9 = 0.001; // Th�?i gian lấy mẫu
 
-double kp9 = 1,ki9 =0.0001, kd9 =0.5;
+double kp9 = 1.5,ki9 =0.0001, kd9 =0.5;
 
 // Khai biến khâu tỉ lệ
 double up9;
 
 // khai biến khâu tích phân
 double ui9,ui_p9;
-int ui_above_limit9=5,ui_under_limit9=-5;
+int ui_above_limit9=0.3,ui_under_limit9=-0.3;
 
 // khai biến khâu đạo hàm
 double ud9,udf9,udf_p9;
@@ -1014,7 +1035,7 @@ double alpha9 = 0.4; // Hệ số bộ l�?c
 // khai biến output
 double u9;
 int u_above_limit9 = 1000,u_under_limit9 = -1000;
-int dir9,pwm9,pwm_movable9= 100;
+int dir9,pwm9,pwm_movable9= 600;
 
 uint8_t cambien;
 int count1;
@@ -1068,16 +1089,17 @@ void PID(){
 	}
 }
 
+
 void ControlMotor(int ChannelA, int ChannelB){
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, ChannelA);
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, ChannelB);
 }
 //Ham cap xung cho dong co
 void driveSpeed(int dir , int pwmVal){
-	if (dir == MOTORDC_CCW){
+	if (dir == -1){
 		ControlMotor(pwmVal,0);
 	}
-	else if (dir == MOTORDC_CW){
+	else if (dir == 1){
 		ControlMotor(0,pwmVal);
 	}
 	else{
@@ -1111,7 +1133,6 @@ void driveSpeed_tail(int dir , int pwmVal){
 	}
 }
 
-
 void driveStep(){
 	int n =0;
 	// 900
@@ -1126,9 +1147,9 @@ void driveStep(){
 		}
 		for(int x = 0; x < n; x++) {
 			HAL_GPIO_WritePin(En_GPIO_Port, En_Pin, 1);
-			HAL_Delay(1);
+			osDelay(1);
 			HAL_GPIO_WritePin(En_GPIO_Port, En_Pin, 0);
-			HAL_Delay(1);
+			osDelay(1);
 		}
 
 		currentAngle = angle;
@@ -1137,21 +1158,28 @@ void driveStep(){
 
 uint8_t moveup;
 uint8_t gunReady;
+uint16_t max_speed = 400;
 void upHandle(void){
-	driveSpeed_tail(MOTORDC_CW, 200);
+	driveSpeed_tail(MOTORDC_CW, max_speed);
 	while(1){
 	  if(!HAL_GPIO_ReadPin(UpperRingSS_GPIO_Port, UpperRingSS_Pin)){
 		  driveSpeed_tail(1, 0);
 		  osDelay(100);
-		  angle = 950;
+		  up = 0;
 		  moveup = 1;
 		  break;
 	  }
 	}
 }
+void uphalf(void){
+	driveSpeed_tail(MOTORDC_CW, max_speed);
+	osDelay(4000);
+	driveSpeed_tail(MOTORDC_CW, 0);
+	up = 0;
 
-void downHandle(){
-	driveSpeed_tail(MOTORDC_CCW,200);
+}
+void downHandle(void){
+	driveSpeed_tail(MOTORDC_CCW,max_speed);
 	while(1)
 		if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13) == 1){
 			driveSpeed_tail(1,0);
@@ -1165,15 +1193,17 @@ void downHandle(){
 void loadingProcess(void){
 	upHandle();
 	if(moveup){
+		angle = 950;
 		driveStep();
 		moveup = 0;
+		angle  = 0;
+		driveStep();
+		gunReady = 1;
 	}
-	angle  = 0;
-	driveStep();
-	gunReady = 1;
 }
 uint8_t step;
-uint8_t trangthai;
+uint8_t trangthai,trangthai2,switchmode;
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -1183,6 +1213,7 @@ uint8_t trangthai;
   * @retval None
   */
 /* USER CODE END Header_StartDefaultTask */
+int ii;
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
@@ -1195,47 +1226,82 @@ cambien = HAL_GPIO_ReadPin(cb_vong_GPIO_Port, cb_vong_Pin);
 
 
 		if(DataTayGame[1]== 128&&DataTayGame[2]==0){
+			RotatePid = 0;
+			forward = 0;
+			ControlDriver(0, 1, 0, 400, 0, 1, 0, 200, 0, 1, 0, 300);
+			osDelay(1000);
 			loadingProcess();
 
 			if(gunReady){
 			ControlGun(1);
 			gunReady = 0;
 			}
-
-
-
 		}
 		if(DataTayGame[1]== 64&&DataTayGame[2]==0){
-			up = 1;
-
-				gun = 2;
-
-
+			RotatePid = 0;
+			forward = 0;
+			ControlDriver(0, 1, 0, 400, 0, 1, 0, 200, 0, 1, 0, 300);
+			osDelay(1000);
+			loadingProcess();
+			RotatePid = 0;
+			if(gunReady){
+			ControlGun(2);
+			gunReady = 0;
+			}
 		}
 		if(DataTayGame[1]== 32&&DataTayGame[2]==0){
-			up = 1;
-
-				gun = 3;
-
-
+			RotatePid = 0;
+			forward = 0;
+			ControlDriver(0, 1, 0, 400, 0, 1, 0, 200, 0, 1, 0, 300);
+			osDelay(1000);
+			loadingProcess();
+			RotatePid = 0;
+			if(gunReady){
+			ControlGun(3);
+			gunReady = 0;
+			}
+		}if(DataTayGame[1]== 4&&DataTayGame[2]==0){
+			RotatePid = 0;
+			forward = 0;
+			ControlDriver(0, 1, 0, 400, 0, 1, 0, 200, 0, 1, 0, 300);
+			osDelay(1000);
+			loadingProcess();
+			RotatePid = 0;
+			if(gunReady){
+			ControlGun(6);
+			gunReady = 0;
+			}
 		}
 
+		if(DataTayGame[1]== 0&&DataTayGame[2]==64){
+			osDelay(20);
+			if(DataTayGame[1]== 0&&DataTayGame[2]==64){
+			switchmode += 1;
+			fuzzy = 0;
+			if (switchmode >3)switchmode = 0;
+			while((DataTayGame[1]== 0&&DataTayGame[2]==64)){}
+			}
+		}
 
-
+//lmao
 	  /*Nhấn nút F1*/
 	  if(DataTayGame[7] == 128 && !DangThucThi){
 		  step = 0;
 		  if(trangthai == 0){
+			  up = 2;
+		  }
+		  else if(trangthai == 1){
+			  up = 3;
 			  forward = 0;
 			  RotatePid = 0;
 			  ControlDriver(0, 1, 0, 300, 0, 1, 0, 300, 0, 1, 0, 300);
-			  osDelay(1000);
+			  osDelay(4500);
 
 			  // #2 chay thang trong 3.8s
-			  goc_target = 5;
+			  goc_target = 6;
 			  forward = 1;
-			  v_t = 80;
-			  osDelay(6000);
+			  v_t = 140;
+			  osDelay(8200);
 			  // #3 thang gap trong 550ms
 			  v_t = 0;
 			  osDelay(500);
@@ -1246,46 +1312,49 @@ cambien = HAL_GPIO_ReadPin(cb_vong_GPIO_Port, cb_vong_Pin);
 			  osDelay(1000);
 			  ControlDriver(0, 1, 0, (300), 0, 1, 0, (300), 0, 1, 0, (300));
 			  osDelay(2000);
-			  // #5 quay 20 do trong 8s
+			  // #5 quay 20 do
 			  ControlDriver(0, 1, 0, (200), 0, 1, 0, (400), 0, 1, 0, (600));
 			  osDelay(2000);
-			  goc_target2 = -30;
+			  goc_target2 = -45;//-30
 
 			  RotatePid = 1;
 		  }
-		  else if (trangthai == 1){
-			  downHandle();
-			  POS_target = -550;
+		  else if (trangthai == 2){
+
+		  			  forward = 0;
+		  			  RotatePid = 0;
+		  			  POS_target = -500;
+
+		  		  }
+		  else if (trangthai == 3){
+
+			  forward = 0;
+			  RotatePid = 0;
+			  up = 2;
 
 		  }
-		  else if (trangthai == 2){
+		  else if (trangthai == 4){
 			  forward = 0;
 			  RotatePid = 0;
 			  ControlDriver(0, 1, 0, 300, 0, 1, 0, 300, 0, 1, 0, 300);
 			  osDelay(1000);
-			  goc_target = -30;
+			  goc_target = GocRobot;//-30
 			  forward = 1;
-			  v_t = 50;
+			  v_t = 20;
 			  batvong();
+		      POS_target = -40;
+		      osDelay(1000);
+		      forward = 1;
+		      v_t = 25;
+		      osDelay(1000);
+		      v_t = 0;
+
+
 
 		  }
-		  else if (trangthai == 3){
-			  POS_target = 0;
-			  upHandle();
+		  else if (trangthai == 5){
+			  up = 3;
 		  }
-		  // #1 giu goc on dinh truoc khi chay
-
-//		  osDelay(6000);
-//		  RotatePid = 0;
-		  // #6 lui den chong vong:
-//		  goc_target = -20;
-//		  ControlDriver(0, 1, 0, (300), 0, 1, 0, (300), 0, 1, 0, (300));
-//		  osDelay(2000);
-//
-//		  forward = 1;
-//		  v_t = 20;
-//		  osDelay(2000);
-//		  v_t = 0;
 		  trangthai++;
 		  DangThucThi = 1;
 	  }
@@ -1293,33 +1362,33 @@ cambien = HAL_GPIO_ReadPin(cb_vong_GPIO_Port, cb_vong_Pin);
 ////
 	  /*Nhấn nút F2*/
 	  if(DataTayGame[7] == 64 && !DangThucThi){
-		  step = 1;
-//		  forward = 0;
-//		  RotatePid = 0;
-//		  ControlDriver(0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0);
-//		  osDelay(2000);
-//		  ControlDriver(3, 1, 0, 0, 3, 1, 0, 0, 3, 1, 0, 0);
+		  if(trangthai2==0){
+			  POS_target = count1;
+			step = 1;
+			//#1 quay goc on dinh banh xe trong 2s
+			forward = 0;
+			RotatePid = 0;
+			ControlDriver(0, 1, 0, 200, 0, -1, 0, 400, 0, 1, 0, 600);
+			osDelay(1000);
+			//#2 quay goc trong 8s
+			goc_target2 = -90;
+			RotatePid = 1;
+		  }
 
-		  //#1 quay goc on dinh banh xe trong 2s
-		  forward = 0;
-		  RotatePid = 0;
-		  ControlDriver(0, 1, 0, 200, 0, -1, 0, 400, 0, 1, 0, 600);
-		  osDelay(2000);
-		  //#2 quay goc trong 8s
-		  goc_target2 = -90;
-		  RotatePid = 1;
-		  osDelay(10000);
-		  //#3 quay goc on donh banh xe trong 2s
-		  RotatePid = 0;
-		  ControlDriver(0, 1, 0, 100, 0, 1, 0, 100, 0, 1, 0, 100);
-		  osDelay(2000);
-		  //#4 chay theo goc -90
-		  goc_target = -90;
-		  batthanh();
-		  goc_target2 = -90;
-		  RotatePid = 1;
-		  DangThucThi = 1;
-	  }
+		  else if(trangthai2 == 1){
+			//#3 quay goc on donh banh xe trong 2s
+			RotatePid = 0;
+			ControlDriver(0, 1, 0, 74, 0, 1, 0, 74, 0, 1, 0, 74);
+			osDelay(2000);
+			//#4 chay theo goc -90
+			goc_target = GocRobot;
+			batthanh();
+			goc_target2 = -90;
+			RotatePid = 1;
+			}
+			trangthai2 ++;
+			DangThucThi = 1;
+		}
 ////
 ////	  /*Nhấn nút F3*/
 	if(DataTayGame[7] == 32 && !DangThucThi){
@@ -1330,47 +1399,49 @@ cambien = HAL_GPIO_ReadPin(cb_vong_GPIO_Port, cb_vong_Pin);
 		ControlDriver(0, 1, 0, 600, 0, 1, 0, 600, 0, 1, 0, 600);
 		osDelay(2000);
 		goc_target = pre_t;
-		v_t = 20;
+		v_t = 35;
 		forward = 3 ;
-		osDelay(1000);
+		osDelay(2000);
 		batcot();
-//		while(a[0]>3000){
-//			if(DataTayGame[2] == 128 && !DangThucThi){
-//			goc_target ++;
-//			DangThucThi =1;
-//		}
-//		if(DataTayGame[2] == 32 && !DangThucThi){
-//		goc_target --;
-//		DangThucThi =1;
-//		}
-//		if(DataTayGame[2] == 0){
-//		DangThucThi = 0;
-//		}
-//
-//		}
-//		v_t = 0;
-//
-//		osDelay(1000);
-//
-//		forward = 0;
-//		RotatePid = 0;
 		ControlDriver(0, 1, 0, 600, 0, 1, 0, 600, 0, 1, 0, 600);
-
+		 antinoise = 0;
 		DangThucThi = 1;
 	}
 ////
 //	  /*Nhấn nút F4*/
 		if(DataTayGame[7] == 16 && !DangThucThi){
+			if(switchmode == 0){
 			forward = 0;
 			RotatePid = 0;
 			ControlDriver(0, 1, 0, 600, 0, 1, 0, 600, 0, 1, 0, 600);
 			osDelay(1000);
 			goc_target = pre_t;
-			v_t = 10;
+			v_t = 22;
 			forward = 3 ;
 			osDelay(800);
 			v_t = 0;
+			}
+			else if(switchmode == 1){
+				fuzzy = 1;
+				forward = 0;
+				RotatePid = 0;
+				ControlDriver(0, 1, 0, 200, 0, -1, 0, 400, 0, 1, 0, 600);
+				osDelay(1000);
+				goc_target2 +=1;
+				RotatePid = 1;
+			}
+			else if (switchmode == 2){
+				forward = 0;
+				RotatePid = 0;
+				ControlDriver(0, 1, 0, 300, 0, 1, 0, 300, 0, 1, 0, 300);
+				osDelay(1000);
+				goc_target = pre_t;
+				v_t = 22;
+				forward = 5 ;
+				osDelay(800);
+				v_t = 0;
 
+			}
 
 			DangThucThi = 1;
 		}
@@ -1381,89 +1452,50 @@ cambien = HAL_GPIO_ReadPin(cb_vong_GPIO_Port, cb_vong_Pin);
 
 	  /*Nhấn nút F5*/
 	  if(DataTayGame[7] == 8 && !DangThucThi){
-		  up = 2;
-//		  forward = 0;
-//		  RotatePid = 0;
-//		  ControlDriver( 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0);
-//		  osDelay(2000);
-//		  ControlDriver(3, 1, 0, 0, 3, 1, 0, 0, 3, 1, 0, 0);
-//		  forward = 0;
-//		  RotatePid = 0;
-//		  ControlDriver(0, 1, 0, 189, 0, 1, 0, 189, 0, 1, 0, 189);
-//		  osDelay(2000);
-//		  goc_target = -90;
-//		  v_t = 30;
-//		  forward = 3 ;
-//		  osDelay(1000);
-//		  while(a[0]>3000){
-//			  if(DataTayGame[2] == 128 && !DangThucThi){
-//				  goc_target ++;
-//				  DangThucThi =1;
-//			  }
-//			  if(DataTayGame[2] == 32 && !DangThucThi){
-//				  goc_target --;
-//				  DangThucThi =1;
-//			  }
-//			  if(DataTayGame[2] == 0){
-//				  DangThucThi = 0;
-//			  }
-//
-//		  }
-//		  v_t = 0;
-
-//		osDelay(1000);
-//
-//		forward = 0;
-//		RotatePid = 0;
-//		ControlDriver(0, 1, 0, 189, 0, 1, 0, 189, 0, 1, 0, 189);
-//		  osDelay(4000);
-//		  v_t = 0;
-//		  osDelay(1000);
+		  ControlDriver(0, 1, 0, 200, 0, -1, 0, 400, 0, 1, 0, 600);
+		  forward =0 ;
+		  RotatePid = 0;
+		  ii++;
+		  if(ii>2){ii = 1;}
+		  if(ii%2 == 1){RotatePid = 0;}
+		  else if(ii == 2){goc_target2 = -20; pre_t = -20;}
+		  RotatePid = 1;
 
 	  	  DangThucThi = 1;
 	  }
 //
 	  /*Nhấn nút F8*/
 	  if(DataTayGame[7] == 4 && !DangThucThi){
-
-		  forward = 0;
+		  if(switchmode == 0){
+			forward = 0;
 			RotatePid = 0;
 			ControlDriver(0, 1, 0, 600, 0, 1, 0, 600, 0, 1, 0, 600);
 			osDelay(1000);
 			goc_target = pre_t;
-			v_t = 10;
+			v_t = 22;
 			forward = 4 ;
 			osDelay(800);
 			v_t = 0;
+		  }else if(switchmode == 1){
+			  	fuzzy = 1;
+				forward = 0;
+				RotatePid = 0;
+				ControlDriver(0, 1, 0, 200, 0, -1, 0, 400, 0, 1, 0, 600);
+				goc_target2 -=1;
+				RotatePid = 1;
+			}
+		  else if (switchmode == 2){
+				forward = 0;
+				RotatePid = 0;
+				ControlDriver(0, 1, 0, 300, 0, 1, 0, 300, 0, 1, 0, 300);
+				osDelay(1000);
+				goc_target = pre_t;
+				v_t = 22;
+				forward = 1 ;
+				osDelay(800);
+				v_t = 0;
+			}
 
-
-
-
-
-//		forward = 0;
-//		RotatePid = 0;
-//		ControlDriver(0, 1, 0, 300, 0, -1, 0, 300, 0, 1, 0, 300);
-//		DangThucThi = 1;
-//		  i1+=1;
-//					  if((i1%2 == 0)&&(i1 != 0)){
-//						  goc_target2 = 0;
-//					  }
-//					  else if(i1%2 != 0 ){
-//						  goc_target2 = -20;
-//					  }
-////	  goc_target2  -= 90;
-//		  forward = 0;
-//		  ControlDriver(0, 1, 0, 57, 0, -1, 0, 123, 0, 1, 0, 189);
-//		  osDelay(1000);
-//		  RotatePid = 1;
-//		  forward = 0;
-//		  ControlDriver(0, 1, 0, 90, 0, 1, 0, 90, 0, 1, 0, 90);
-//		  osDelay(1000);
-//		  ControlDriver(0, -1, 500, 90, 0, -1, 500, 90, 0, -1, 500, 90);
-//		  DangThucThi = 1;
-
-//		  ControlDriver(0, -1, 500, 60, 0, 1, 500, 120, 0, -1, 500, 180);
-//
 		  DangThucThi = 1;
 	  }
 
@@ -1516,6 +1548,8 @@ void TaskBlinkLed(void const * argument)
 */
 
 char DebugStr[200];
+int c;
+
 /* USER CODE END Header_TaskUART */
 void TaskUART(void const * argument)
 {
@@ -1523,38 +1557,12 @@ void TaskUART(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-
-	  s1 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7);
-	  	  s2 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13);
-
-	  	  if (up == 1){
-	  		  upHandle();
-	  	  }
-
-
-	  	  else if (up == 2){
-	  		  downHandle();
-
-	  	  }
-
-	  	  else if(up == 0){
-	  		  driveSpeed(0, 0);
-	  		  driveStep();
-	  	  }
-
-	  	  if (up == 0&& currentAngle==0){
-	  		 if (gun == 1){
-				  ControlGun(1);
-				  gun= 0;
-			 }
-	  		 else if (gun == 2){
-				  ControlGun(2);
-				  gun= 0;
-			  } if (gun == 3){
-				  ControlGun(3);
-				  gun= 0;
-			  }
-	  	  }
+//	  driveSpeed(dir9,pwm9);
+	  if(up == 1){upHandle();}
+	  else if(up == 2){downHandle();}
+	  else if (up == 3){uphalf();}
+	  driveStep();
+	  osDelay(1);
 
 //	  snprintf(DebugStr, "{GocRobot: %d, U: %d, E: %d, EI: %d}", GocRobot, u, e, ei);
 //	  HAL_UART_Transmit(&huart3, (uint8_t *) DebugStr, 199, 1000);
@@ -1563,7 +1571,6 @@ void TaskUART(void const * argument)
 //		  ControlGun(ModeBan);
 //		  ChoPhepBan = 0;
 //	  }
-	  osDelay(100);
   }
   /* USER CODE END TaskUART */
 }
@@ -1581,18 +1588,15 @@ void TaskXoayLaBan(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-
+	  driveSpeed(dir9,pwm9);
 	  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)a, 1);
 	  if (POS_target> 1000){
 		  POS_target = 0;
 	  }
-//	  driveSpeed(dir9,pwm9);
-//	  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)a, 1);
-//	  osDelay(5);
 	  if(forward == 1){
 	  		  ControlDriver(1, -1, v_t, (300-3*e1), 1, -1, v_t, (300-3*e1), 1, -1, v_t, (300+3*e1));
-	  		  osDelay(1);
 	  	  }
+
 	  else{
 		  osDelay(1);
 	  }
@@ -1604,7 +1608,7 @@ void TaskXoayLaBan(void const * argument)
 		  ControlDriver(2, -dir2, pwm, 200,2 , dir2, pwm, 400, 2, -dir2, pwm, 600);
 	  }
 	  if((forward == 2)){
-		  ControlDriver(1, 1, v_t, (100+1*e1), 1, 1, v_t, (100+1*e1), 1, 1, v_t, (100-1*e1));
+		  ControlDriver(1, 1, v_t, (74+1*e1), 1, 1, v_t, (74+1*e1), 1, 1, v_t, (74-1*e1));
 		  osDelay(1);
 	  }
 	  if((forward == 3)){
@@ -1612,15 +1616,11 @@ void TaskXoayLaBan(void const * argument)
 	  		  ControlDriver(1, -1, v_t, (600-6*e1), 1, -1, v_t, (600+6*e1), 1, -1, v_t, (600));
 	  		  osDelay(1);
 	  	  }
+	  if(forward == 5){
+	  	 	  		  ControlDriver(1, 1, v_t, (300+3*e1), 1, 1, v_t, (300+3*e1), 1, 1, v_t, (300-3*e1));
+	  	 	  		  osDelay(1);
+	  	 	  	  }
 
-//	  if(DataTayGame[2] == 128 && !DangThucThi){
-//		  goc_target--;
-//	  	 	  	  DangThucThi = 1;
-//	  	 	  }
-//	  if(DataTayGame[2] == 32 && !DangThucThi){
-//	  		  goc_target++;
-//	  	  	 	  	  DangThucThi = 1;
-//	  	  	 	  }
 
 
   }
@@ -1644,10 +1644,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-  goc_hientai = GocRobot;
-  e1 = goc_target - goc_hientai;
-  Pid_cal();
-  PID();
+  if (htim->Instance == TIM2) {
+	  goc_hientai = GocRobot;
+	    e1 = goc_target - goc_hientai;
+	    Pid_cal();
+	    PID();
+    }
+//  if (htim->Instance == TIM6) {
+//      t+=100;
+//    }
+
   /* USER CODE END Callback 1 */
 }
 
